@@ -1,2 +1,3 @@
-from .controllers import SimpleUnitDiscreteController
-from .obs_wrappers import SimpleUnitObservationWrapper
+from .controllers import IceMinerUnitDiscreteController, RubbleMinerUnitDiscreteController, OreMinerUnitDiscreteController
+from .controllers import collisionHandler
+from .obs_wrappers import IceMinerUnitObservationWrapper, RubbleMinerUnitObservationWrapper, OreMinerUnitObservationWrapper

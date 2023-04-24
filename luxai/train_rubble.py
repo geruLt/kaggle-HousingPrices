@@ -30,7 +30,9 @@ from stable_baselines3.common.vec_env import (
 )
 from stable_baselines3.ppo import PPO
 
-from wrappers import SimpleUnitDiscreteController, SimpleUnitObservationWrapper
+from wrappers import IceMinerUnitDiscreteController, RubbleMinerUnitDiscreteController, OreMinerUnitDiscreteController
+from wrappers import IceMinerUnitObservationWrapper, RubbleMinerUnitObservationWrapper, OreMinerUnitObservationWrapper
+from wrappers import collisionHandler
 
 
 class CustomEnvWrapper(gym.Wrapper):
@@ -67,9 +69,9 @@ class CustomEnvWrapper(gym.Wrapper):
             stats["generation"]["ice"]["HEAVY"] + stats["generation"]["ice"]["LIGHT"]
         )
         metrics["water_produced"] = stats["generation"]["water"]
-        metrics["lichen_produced"] = stats["generation"]["lichen"]
-
-
+        metrics["rubble_removed"] = (
+            stats["destroyed"]["rubble"]["HEAVY"] + stats["destroyed"]["rubble"]["LIGHT"]
+        )
         # we save these two to see often the agent updates robot action queues and how often enough
         # power to do so and succeed (less frequent updates = more power is saved)
         metrics["action_queue_updates_success"] = stats["action_queue_updates_success"]
@@ -82,13 +84,12 @@ class CustomEnvWrapper(gym.Wrapper):
         if self.prev_step_metrics is not None:
             # we check how much ice and water is produced and reward the agent for generating both
             ice_dug_this_step = metrics["ice_dug"] - self.prev_step_metrics["ice_dug"]
+            rubble_removed_this_step = metrics["rubble_removed"] -  self.prev_step_metrics["rubble_removed"]
             water_produced_this_step = (
                 metrics["water_produced"] - self.prev_step_metrics["water_produced"]
             )
-            lichen_produced_this_step = (
-                metrics["lichen_produced"] - self.prev_step_metrics["lichen_produced"]
-            )            # we reward water production more as it is the most important resource for survival
-            reward = ice_dug_this_step / 100 + water_produced_this_step + lichen_produced_this_step * lichen_produced_this_step
+            # we reward water production more as it is the most important resource for survival
+            reward = ice_dug_this_step / 100 + water_produced_this_step + rubble_removed_this_step
 
         self.prev_step_metrics = copy.deepcopy(metrics)
         return obs, reward, done, info
@@ -159,9 +160,9 @@ def make_env(env_id: str, rank: int, seed: int = 0, max_episode_steps=100):
         env = SB3Wrapper(
             env,
             factory_placement_policy=place_near_random_ice,
-            controller=SimpleUnitDiscreteController(env.env_cfg),
+            controller=RubbleMinerUnitDiscreteController(env.env_cfg),
         )
-        env = SimpleUnitObservationWrapper(
+        env = RubbleMinerUnitObservationWrapper(
             env
         )  # changes observation to include a few simple features
         env = CustomEnvWrapper(env)  # convert to single agent, add our reward
